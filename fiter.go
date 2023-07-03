@@ -36,8 +36,10 @@ func main() {
 	delimiterFlag := flag.String("d", ",", "delimiter")
 	outputFlag := flag.String("o", os.Stdout.Name(), "output file")
 	flag.Usage = func() {
-		fmt.Fprintln(flag.CommandLine.Output(), "usage: ./fiter [-flags] [file]")
+		fmt.Fprintln(flag.CommandLine.Output(), "usage: ./fiter [-flags] [dir]")
 		flag.CommandLine.PrintDefaults()
+		fmt.Println("  [dir]")
+		fmt.Println("\tpath to directory")
 	}
 	flag.Parse()
 	delimiter, _ := utf8.DecodeRuneInString(*delimiterFlag)
@@ -46,7 +48,7 @@ func main() {
 		log.Fatal(err)
 	}
 	path := flag.Arg(0)
-	if len(path) == 0 {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Fatal("invalid path")
 	}
 	log.Println("start")
@@ -61,6 +63,10 @@ func Write(root string, output *os.File, delimiter rune) {
 	entries := Walk(root)
 	w := csv.NewWriter(output)
 	w.Comma = delimiter
+	err := w.Write([]string{"path", "datetime", "length"})
+	if err != nil {
+		log.Println(err)
+	}
 	for entry := range entries {
 		err := w.Write(entry)
 		if err != nil {
